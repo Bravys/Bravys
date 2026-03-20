@@ -5,7 +5,7 @@
   <title>Can you claim my treasure?</title>
   <style>
     body {
-      background-color: #121212;
+      background-color: #121212; /* Dark mode */
       color: #ffffff;
       display: flex;
       justify-content: center;
@@ -40,12 +40,13 @@
       font-weight: bold;
       color: #00ff00;
     }
-    #mathSection, #passwordSection, #tictactoeSection { display: none; margin-top: 20px; }
+    #mathSection { display: none; margin-top: 20px; }
+    #passwordSection { display: none; margin-top: 20px; }
     #idSection { margin-top: 20px; }
     #countdown {
       font-size: 20px;
       margin-top: 20px;
-      color: #ff0000; /* Red countdown */
+      color: #00ff00;
     }
     #message {
       font-size: 28px;
@@ -63,6 +64,7 @@
       font-style: italic;
       color: #00ffff;
     }
+    /* Tik-Tac-Toe styles */
     #board {
       display: grid;
       grid-template-columns: repeat(3, 80px);
@@ -79,6 +81,7 @@
       border: 1px solid #ffffff;
       cursor: pointer;
     }
+    #tictactoeSection { display:none; margin-top:20px; }
   </style>
 </head>
 <body>
@@ -127,126 +130,126 @@
   </div>
 
   <script>
-    document.addEventListener("DOMContentLoaded", () => {
-      let wrongAttempts = 0;
-      let lockoutActive = false;
+    let wrongAttempts = 0;
+    let lockoutActive = false;
 
-      function checkID() {
-        const id = document.getElementById("idInput").value.trim();
-        if (id === "2018" || id === "2567") {
-          document.getElementById("idSection").style.display = "none";
-          document.getElementById("passwordSection").style.display = "block";
-        } else {
-          const output = document.getElementById("output");
-          output.textContent = "Invalid ID";
-          setTimeout(() => { output.textContent = ""; }, 2000);
+    function checkID() {
+      const id = document.getElementById("idInput").value.trim();
+      if (id === "2018" || id === "2567") {
+        document.getElementById("idSection").style.display = "none";
+        document.getElementById("passwordSection").style.display = "block";
+      } else {
+        const output = document.getElementById("output");
+        output.textContent = "Invalid ID";
+        setTimeout(() => { output.textContent = ""; }, 2000);
+      }
+    }
+
+    function checkPassword() {
+      if (lockoutActive) return;
+
+      const input = document.getElementById("passwordInput").value;
+      if (input === "Bravys gives you another chance") {
+        wrongAttempts = 0;
+        startTicTacToe(); // show tic tac toe instead of math directly
+      } else {
+        wrongAttempts++;
+        const output = document.getElementById("output");
+        output.textContent = "Access Denied";
+        setTimeout(() => { output.textContent = ""; }, 2000);
+
+        if (wrongAttempts >= 5) {
+          startLockout();
         }
       }
+    }
 
-      function checkPassword() {
-        if (lockoutActive) return;
-        const input = document.getElementById("passwordInput").value;
-        if (input === "Bravys gives you another chance") {
-          wrongAttempts = 0;
-          startTicTacToe();
-        } else {
-          wrongAttempts++;
-          const output = document.getElementById("output");
-          output.textContent = "Access Denied";
-          setTimeout(() => { output.textContent = ""; }, 2000);
-          if (wrongAttempts >= 5) startLockout();
-        }
-      }
+    function startLockout() {
+      lockoutActive = true;
+      let timeLeft = 30;
+      const lockoutEl = document.getElementById("lockout");
+      lockoutEl.textContent = `Too many attempts! Wait ${timeLeft}s`;
 
-      function startLockout() {
-        lockoutActive = true;
-        let timeLeft = 30;
-        const lockoutEl = document.getElementById("lockout");
+      const interval = setInterval(() => {
+        timeLeft--;
         lockoutEl.textContent = `Too many attempts! Wait ${timeLeft}s`;
-        const interval = setInterval(() => {
-          timeLeft--;
-          lockoutEl.textContent = `Too many attempts! Wait ${timeLeft}s`;
-          if (timeLeft <= 0) {
-            clearInterval(interval);
-            lockoutEl.textContent = "";
-            lockoutActive = false;
-            wrongAttempts = 0;
-          }
-        }, 1000);
+        if (timeLeft <= 0) {
+          clearInterval(interval);
+          lockoutEl.textContent = "";
+          lockoutActive = false;
+          wrongAttempts = 0;
+        }
+      }, 1000);
+    }
+
+    function startTicTacToe() {
+      document.getElementById("passwordSection").style.display = "none";
+      document.getElementById("tictactoeSection").style.display = "block";
+
+      const board = document.getElementById("board");
+      board.innerHTML = "";
+      let cells = Array(9).fill("");
+      let gameOver = false;
+
+      function checkWin(c) {
+        const wins = [
+          [0,1,2],[3,4,5],[6,7,8],
+          [0,3,6],[1,4,7],[2,5,8],
+          [0,4,8],[2,4,6]
+        ];
+        return wins.some(line => line.every(i => cells[i] === c));
       }
 
-      function startTicTacToe() {
-        document.getElementById("passwordSection").style.display = "none";
-        document.getElementById("tictactoeSection").style.display = "block";
-        const board = document.getElementById("board");
-        board.innerHTML = "";
-        let cells = Array(9).fill("");
-        let gameOver = false;
+      function checkDraw() {
+        return cells.every(c => c !== "");
+      }
 
-        function checkWin(c) {
-          const wins = [
-            [0,1,2],[3,4,5],[6,7,8],
-            [0,3,6],[1,4,7],[2,5,8],
-            [0,4,8],[2,4,6]
-          ];
-          return wins.some(line => line.every(i => cells[i] === c));
-        }
+      function aiMove() {
+        let empty = cells.map((c, i) => c === "" ? i : null).filter(i => i !== null);
+        if (empty.length === 0) return;
+        let move = empty[Math.floor(Math.random() * empty.length)];
+        cells[move] = "O";
+        board.children[move].textContent = "O";
+      }
 
-        function checkDraw() {
-          return cells.every(c => c !== "");
-        }
+      function handleClick(i) {
+        if (cells[i] !== "" || gameOver) return;
+        cells[i] = "X";
+        board.children[i].textContent = "X";
 
-        function aiMove() {
-          let empty = cells.map((c, i) => c === "" ? i : null).filter(i => i !== null);
-          if (empty.length === 0) return;
-          let move = empty[Math.floor(Math.random() * empty.length)];
-          cells[move] = "O";
-          board.children[move].textContent = "O";
-        }
-
-        function handleClick(i) {
-          if (cells[i] !== "" || gameOver) return;
-          cells[i] = "X";
-          board.children[i].textContent = "X";
-
-          if (checkWin("X") || checkDraw()) {
+        if (checkWin("X") || checkDraw()) {
+          gameOver = true;
+          document.getElementById("tictactoeSection").style.display = "none";
+          document.getElementById("mathSection").style.display = "block";
+        } else {
+          aiMove();
+          if (checkWin("O")) {
+            gameOver = true;
+            alert("❌ You lost. Try again.");
+            startTicTacToe(); // restart
+          } else if (checkDraw()) {
             gameOver = true;
             document.getElementById("tictactoeSection").style.display = "none";
             document.getElementById("mathSection").style.display = "block";
-          } else {
-            aiMove();
-            if (checkWin("O")) {
-              gameOver = true;
-              alert("❌ You lost. Try again.");
-              startTicTacToe();
-            } else if (checkDraw()) {
-              gameOver = true;
-              document.getElementById("tictactoeSection").style.display = "none";
-              document.getElementById("mathSection").style.display = "block";
-            }
           }
         }
-
-        for (let i = 0; i < 9; i++) {
-          let cell = document.createElement("div");
-          cell.className = "cell";
-          cell.addEventListener("click", () => handleClick(i));
-          board.appendChild(cell);
-        }
       }
 
-      function checkAnswer() {
-        const input = document.getElementById("answerInput").value.trim();
-        const output = document.getElementById("output");
-        if (input === "97") {
-          output.textContent = "19067";
-          setTimeout(() => { output.textContent = ""; }, 2000);
-        } else {
-          output.textContent = "Wrong Answer";
-          setTimeout(() => { output.textContent = ""; }, 2000);
-        }
+      for (let i = 0; i < 9; i++) {
+        let cell = document.createElement("div");
+        cell.className = "cell";
+        cell.addEventListener("click", () => handleClick(i));
+        board.appendChild(cell);
       }
+    }
 
-      // Countdown logic (48 hours)
-      const deploymentTime = new Date("2026-03-18T22:41:00");
-      const deadline
+    function checkAnswer() {
+      const input = document.getElementById("answerInput").value.trim();
+      const output = document.getElementById("output");
+      if (input === "97") {
+        output.textContent = "19067";
+        setTimeout(() => { output.textContent = ""; }, 2000);
+      } else {
+        output.textContent = "Wrong Answer";
+        setTimeout(() => { output.textContent = ""; }, 2000);
+      }
